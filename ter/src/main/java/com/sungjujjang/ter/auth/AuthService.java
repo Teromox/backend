@@ -4,6 +4,7 @@ import com.sungjujjang.ter.auth.dto.AuthResponseDTO;
 import com.sungjujjang.ter.auth.dto.RegiSerDTO;
 import com.sungjujjang.ter.auth.dto.RegisterRequestDTO;
 import com.sungjujjang.ter.global.PasswordSetting;
+import com.sungjujjang.ter.global.error.exception.DuplicateIdErr;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,13 +17,15 @@ public class AuthService {
 
     @Transactional
     public AuthResponseDTO registerMember(RegisterRequestDTO requestDto) {
+        if (memberRepo.existsByid(requestDto.id())) {
+            throw DuplicateIdErr.EXCEPTION;
+        }
         Member member = Member.builder()
                 .id(requestDto.id())
                 .email(requestDto.email())
                 .credit(0)
                 .password(passwordSetting.encode(requestDto.password()))
                 .build();
-        assert memberRepo != null;
         memberRepo.save(member);
         
         return AuthResponseDTO.builder()

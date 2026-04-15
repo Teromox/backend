@@ -11,11 +11,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 @Aspect
 @Component
 public class AuthAOP {
-    @Pointcut("execution(* com.sungjujjang.ter..*.*(..))")
+    @Pointcut("execution(* com.sungjujjang.ter..*Controller.*(..))")
     private void cut(){}
 
     @Before("cut() && !@annotation(com.sungjujjang.ter.global.NoAuthAnno)")
