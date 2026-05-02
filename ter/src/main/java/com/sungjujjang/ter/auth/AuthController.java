@@ -1,14 +1,13 @@
 package com.sungjujjang.ter.auth;
 
 import com.sungjujjang.ter.auth.dto.AuthResponseDTO;
+import com.sungjujjang.ter.auth.dto.LoginRequestDTO;
 import com.sungjujjang.ter.auth.dto.RegisterRequestDTO;
 import com.sungjujjang.ter.global.NoAuthAnno;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -18,7 +17,19 @@ public class AuthController {
 
     @PostMapping("/register")
     @NoAuthAnno
-    public AuthResponseDTO reg(@RequestBody @Valid RegisterRequestDTO dto) {
+    public AuthResponseDTO registerUser(@RequestBody @Valid RegisterRequestDTO dto) {
         return authService.registerMember(dto);
+    }
+
+    @PostMapping("/login")
+    @NoAuthAnno
+    public AuthResponseDTO loginUser(@RequestBody @Valid LoginRequestDTO dto) {
+        return authService.loginMember(dto);
+    }
+
+    @GetMapping("/test")
+    public String testJwt(HttpServletRequest request) {
+        String userId = (String) request.getAttribute("userId");
+        return userId;
     }
 }

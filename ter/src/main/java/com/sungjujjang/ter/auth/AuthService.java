@@ -1,10 +1,11 @@
 package com.sungjujjang.ter.auth;
 
-import com.sungjujjang.ter.auth.dto.AuthResponseDTO;
-import com.sungjujjang.ter.auth.dto.RegiSerDTO;
-import com.sungjujjang.ter.auth.dto.RegisterRequestDTO;
+import com.sungjujjang.ter.auth.dto.*;
+import com.sungjujjang.ter.global.JWTSetting;
 import com.sungjujjang.ter.global.PasswordSetting;
 import com.sungjujjang.ter.global.error.exception.DuplicateIdErr;
+import com.sungjujjang.ter.global.error.exception.NotExistIdErr;
+import com.sungjujjang.ter.global.error.exception.NotMatchPasswordErr;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,25 +15,47 @@ import org.springframework.stereotype.Service;
 public class AuthService {
     private final MemberRepo memberRepo;
     private final PasswordSetting passwordSetting;
+    private final JWTSetting jwtSetting;
+
+    Long expTime = 1000 * 60 * 60 * 24 * 7L;
 
     @Transactional
-    public AuthResponseDTO registerMember(RegisterRequestDTO requestDto) {
-        if (memberRepo.existsByid(requestDto.id())) {
+    public AuthResponseDTO registerMember(RegisterRequestDTO requestDTO) {
+        if (memberRepo.existsByid(requestDTO.id())) {
             throw DuplicateIdErr.EXCEPTION;
         }
         Member member = Member.builder()
-                .id(requestDto.id())
-                .email(requestDto.email())
+                .id(requestDTO.id())
+                .email(requestDTO.email())
                 .credit(0)
-                .password(passwordSetting.encode(requestDto.password()))
+                .password(passwordSetting.encode(requestDTO.password()))
                 .build();
         memberRepo.save(member);
-        
+
+        String jwtToken = jwtSetting.createToken(member.getId(), expTime);
+
         return AuthResponseDTO.builder()
                 .status(Boolean.TRUE)
-                .message("success")
+                .jwt(jwtToken)
                 .code(200)
                 .object(RegiSerDTO.from(member))
+                .build();
+    }
+
+    public AuthResponseDTO loginMember(LoginRequestDTO requestDTO) {
+        Member member = memberRepo.findByid(requestDTO.id())
+                .orElseThrow(() -> NotExistIdErr.EXCEPTION);
+        if (!passwordSetting.check(requestDTO.password(), member.getPassword())) {
+            throw NotMatchPasswordErr.EXCEPTION;
+        }
+
+        String jwtToken = jwtSetting.createToken(requestDTO.id(), expTime);
+
+        return AuthResponseDTO.builder()
+                .status(Boolean.TRUE)
+                .jwt(jwtToken)
+                .code(200)
+                .object(LoginSerDTO.from(member))
                 .build();
     }
 }

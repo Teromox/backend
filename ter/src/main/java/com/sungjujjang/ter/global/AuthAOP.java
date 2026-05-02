@@ -1,6 +1,10 @@
 package com.sungjujjang.ter.global;
 
+import com.sungjujjang.ter.global.error.exception.NotValidJwtErr;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.Null;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -15,7 +19,10 @@ import java.util.Arrays;
 
 @Aspect
 @Component
+@RequiredArgsConstructor
 public class AuthAOP {
+    private final JWTSetting jwtSetting;
+
     @Pointcut("execution(* com.sungjujjang.ter..*Controller.*(..))")
     private void cut(){}
 
@@ -27,16 +34,10 @@ public class AuthAOP {
             HttpServletRequest request = attributes.getRequest();
 
             String jwtToken = request.getHeader("Authorization");
-            System.out.println("jwtToken value = " + jwtToken);
-        }
-
-        Object[] args = joinPoint.getArgs();
-        if (args.length <= 0) System.out.println("no parameter");
-        for (Object arg : args) {
-            if (arg != null) {
-                System.out.println("parameter type = " + arg.getClass().getSimpleName());
-                System.out.println("parameter value = " + arg);
-            }
+            String userId = jwtSetting.checkToken(jwtToken);
+            request.setAttribute("userId", userId);
+        } else {
+            throw NotValidJwtErr.EXCEPTION;
         }
     }
 }

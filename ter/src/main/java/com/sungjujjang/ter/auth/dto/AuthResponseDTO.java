@@ -5,7 +5,7 @@ import lombok.Builder;
 @Builder
 public record AuthResponseDTO(
         Boolean status,
-        String message,
+        String jwt,
         Integer code,
         Object object
 ) {}
