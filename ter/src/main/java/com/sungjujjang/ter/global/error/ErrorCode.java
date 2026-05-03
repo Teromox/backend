@@ -14,6 +14,10 @@ public enum ErrorCode {
 
     NOT_VALID_JWT_TOKEN(405, "NOT_VALID_JWT_TOKEN"),
 
+    NOT_EXIST_CODE(406, "NOT_EXIST_CODE"),
+
+    NO_CREDIT(408, "NO_CREDIT"),
+
     INTERNAL_SERVER_ERR(500, "INTERNAL_SERVER");
 
     private Integer errcode;

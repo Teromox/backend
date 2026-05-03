@@ -58,4 +58,15 @@ public class AuthService {
                 .object(LoginSerDTO.from(member))
                 .build();
     }
+
+    public MeResponseDTO getMe(String UserId) {
+        Member member = memberRepo.findByid(UserId)
+                .orElseThrow(() -> NotExistIdErr.EXCEPTION);
+        return MeResponseDTO.builder()
+                .status(Boolean.TRUE)
+                .id(member.getId())
+                .email(member.getEmail())
+                .credit(member.getCredit())
+                .build();
+    }
 }

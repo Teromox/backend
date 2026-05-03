@@ -1,5 +1,6 @@
 package com.sungjujjang.ter.vm;
 
+import com.sungjujjang.ter.auth.Member;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -23,9 +24,11 @@ public class Vm {
 
     private String name;
 
+    private String username;
+
     @ManyToOne
     @JoinColumn(name="member_id")
-    private String owner;
+    private Member owner;
 
     private Integer ssh_port;
 

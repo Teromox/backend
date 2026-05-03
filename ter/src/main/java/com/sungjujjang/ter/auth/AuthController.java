@@ -2,6 +2,7 @@ package com.sungjujjang.ter.auth;
 
 import com.sungjujjang.ter.auth.dto.AuthResponseDTO;
 import com.sungjujjang.ter.auth.dto.LoginRequestDTO;
+import com.sungjujjang.ter.auth.dto.MeResponseDTO;
 import com.sungjujjang.ter.auth.dto.RegisterRequestDTO;
 import com.sungjujjang.ter.global.NoAuthAnno;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,9 +28,9 @@ public class AuthController {
         return authService.loginMember(dto);
     }
 
-    @GetMapping("/test")
-    public String testJwt(HttpServletRequest request) {
+    @GetMapping("/")
+    public MeResponseDTO getMeMember(HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
-        return userId;
+        return authService.getMe(userId);
     }
 }

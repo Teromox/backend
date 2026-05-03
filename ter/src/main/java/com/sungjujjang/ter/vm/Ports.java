@@ -18,7 +18,7 @@ public class Ports {
 
     @ManyToOne
     @JoinColumn(name="vm_id")
-    private String vm;
+    private Vm vm;
 
     private Integer InPort;
 

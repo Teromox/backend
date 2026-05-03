@@ -28,12 +28,15 @@ public class AuthAOP {
 
     @Before("cut() && !@annotation(com.sungjujjang.ter.global.NoAuthAnno)")
     public void beforeParameterLog(JoinPoint joinPoint) {
-        System.out.println("Requested");
+//        System.out.println("Requested");
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attributes != null) {
             HttpServletRequest request = attributes.getRequest();
 
             String jwtToken = request.getHeader("Authorization");
+            if (jwtToken == null) {
+                throw NotValidJwtErr.EXCEPTION;
+            }
             String userId = jwtSetting.checkToken(jwtToken);
             request.setAttribute("userId", userId);
         } else {
