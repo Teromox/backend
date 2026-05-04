@@ -6,9 +6,13 @@ import com.sungjujjang.ter.global.PasswordSetting;
 import com.sungjujjang.ter.global.error.exception.DuplicateIdErr;
 import com.sungjujjang.ter.global.error.exception.NotExistIdErr;
 import com.sungjujjang.ter.global.error.exception.NotMatchPasswordErr;
+import com.sungjujjang.ter.vm.VmRepo;
+import com.sungjujjang.ter.vm.dto.VmDTO;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -16,6 +20,7 @@ public class AuthService {
     private final MemberRepo memberRepo;
     private final PasswordSetting passwordSetting;
     private final JWTSetting jwtSetting;
+    private final VmRepo vmRepo;
 
     Long expTime = 1000 * 60 * 60 * 24 * 7L;
 
@@ -62,11 +67,23 @@ public class AuthService {
     public MeResponseDTO getMe(String UserId) {
         Member member = memberRepo.findByid(UserId)
                 .orElseThrow(() -> NotExistIdErr.EXCEPTION);
+        // HEHE
+        List<VmDTO> VVS = vmRepo.findByOwner(member).stream()
+                    .map(
+                    vm -> VmDTO.builder()
+                            .id(vm.getId())
+                            .ip(vm.getIp())
+                            .name(vm.getName())
+                            .username(vm.getUsername())
+                            .ssh_port(vm.getSsh_port())
+                            .build()
+                    ).toList();
         return MeResponseDTO.builder()
                 .status(Boolean.TRUE)
                 .id(member.getId())
                 .email(member.getEmail())
                 .credit(member.getCredit())
+                .vm(VVS)
                 .build();
     }
 }

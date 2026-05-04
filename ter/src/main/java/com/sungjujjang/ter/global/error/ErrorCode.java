@@ -18,6 +18,10 @@ public enum ErrorCode {
 
     NO_CREDIT(408, "NO_CREDIT"),
 
+    NO_EXIST_VM(409, "NO_EXIST_VM"),
+
+    NOT_OWNER(410, "NOT_OWNER"),
+
     INTERNAL_SERVER_ERR(500, "INTERNAL_SERVER");
 
     private Integer errcode;

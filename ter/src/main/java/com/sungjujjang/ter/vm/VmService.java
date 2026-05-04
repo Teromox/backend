@@ -4,8 +4,10 @@ import com.sungjujjang.ter.auth.Member;
 import com.sungjujjang.ter.auth.MemberRepo;
 import com.sungjujjang.ter.global.TaskStorage;
 import com.sungjujjang.ter.global.error.exception.NoCreditErr;
-import com.sungjujjang.ter.vm.dto.VmCreateRequestDTO;
-import com.sungjujjang.ter.vm.dto.VmCreateResponseDTO;
+import com.sungjujjang.ter.global.error.exception.NoExistVmErr;
+import com.sungjujjang.ter.global.error.exception.NoOwnerErr;
+import com.sungjujjang.ter.global.error.exception.NotExistIdErr;
+import com.sungjujjang.ter.vm.dto.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +25,9 @@ public class VmService {
 
     @Value("${proxmox.api.url}")
     private String proxmoxApiUrl;
+
+    @Value("ext.ip")
+    private String ip;
 
     @Transactional
     public VmCreateResponseDTO CreateVm(VmCreateRequestDTO requestDTO, Member member) {
@@ -56,6 +61,135 @@ public class VmService {
         vmRepo.save(vm);
 
         return responseDTO;
+    }
+
+    @Transactional
+    public VmDeleteResponseDTO DeleteVm(VmDeleteRequestDTO requestDTO, Member member) {
+        Vm vm = vmRepo.findById(requestDTO.id())
+                .orElseThrow(() -> NoExistVmErr.EXCEPTION);
+        if (vm.getOwner() != member) {
+            throw NoOwnerErr.EXCEPTION;
+        }
+        vmRepo.delete(vm);
+        // 400~ 에러 발생하면 500으로반환해줌 수정안해도댐
+        WebClient.create(proxmoxApiUrl)
+                .delete()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/vm")
+                        .queryParam("vmid", requestDTO.id())
+                        .build()
+                )
+                .header("api-key", proxmoxApiKey)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block();
+        member.setCredit(member.getCredit()+1);
+        return VmDeleteResponseDTO.builder()
+                .status(true)
+                .build();
+    }
+
+    @Transactional
+    public VmCreateResponseDTO ResetVm(VmDeleteRequestDTO requestDTO, Member member) {
+        Vm vm = vmRepo.findById(requestDTO.id())
+                .orElseThrow(() -> NoExistVmErr.EXCEPTION);
+        if (vm.getOwner() != member) {
+            throw NoOwnerErr.EXCEPTION;
+        }
+        VmResetApiDTO responseDTO = WebClient.create(proxmoxApiUrl)
+                .put()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/vm")
+                        .queryParam("username", vm.getUsername())
+                        .queryParam("vmid", requestDTO.id())
+                        .build()
+                )
+                .header("api-key", proxmoxApiKey)
+                .retrieve()
+                .bodyToMono(VmResetApiDTO.class)
+                .block();
+        return VmCreateResponseDTO.builder()
+                .ssh_port(vm.getSsh_port())
+                .ip(vm.getIp())
+                .private_key(responseDTO.private_key())
+                .vmid(responseDTO.vmid())
+                .password(responseDTO.password())
+                .build();
+    }
+
+    public VmResponseDTO StatusVm(String vmId, Member member) {
+        Vm vm = vmRepo.findById(vmId)
+                .orElseThrow(() -> NoExistVmErr.EXCEPTION);
+        if (vm.getOwner() != member) {
+            throw NoOwnerErr.EXCEPTION;
+        }
+        VmStatusResponse response = WebClient.create(proxmoxApiUrl)
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/vm/status")
+                        .queryParam("vmid", vmId)
+                        .build()
+                )
+                .header("api-key", proxmoxApiKey)
+                .retrieve()
+                .bodyToMono(VmStatusResponse.class)
+                .block();
+        return VmResponseDTO.builder()
+                .cpu(response.data().cpu())
+                .mem(response.data().mem())
+                .maxmem(response.data().maxmem())
+                .uptime(response.data().uptime())
+                .innerIp(vm.getIp())
+                .outIp(ip)
+                .sshPort(vm.getSsh_port())
+                .name(vm.getName())
+                .username(vm.getUsername())
+                .status(response.data().status())
+                .build();
+    }
+
+    public VmRunResponseDTO StartVm(String vmId, Member member) {
+        Vm vm = vmRepo.findById(vmId)
+                .orElseThrow(() -> NoExistVmErr.EXCEPTION);
+        if (vm.getOwner() != member) {
+            throw NoOwnerErr.EXCEPTION;
+        }
+        WebClient.create(proxmoxApiUrl)
+                .post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/vm/start")
+                        .queryParam("vmid", vmId)
+                        .build()
+                )
+                .header("api-key", proxmoxApiKey)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block();
+        return VmRunResponseDTO.builder()
+                .status(Boolean.TRUE)
+                .build();
+    }
+
+    public VmRunResponseDTO StopVm(String vmId, Member member) {
+        Vm vm = vmRepo.findById(vmId)
+                .orElseThrow(() -> NoExistVmErr.EXCEPTION);
+        if (vm.getOwner() != member) {
+            throw NoOwnerErr.EXCEPTION;
+        }
+        WebClient.create(proxmoxApiUrl)
+                .post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/vm/stop")
+                        .queryParam("vmid", vmId)
+                        .build()
+                )
+                .header("api-key", proxmoxApiKey)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block();
+        return VmRunResponseDTO.builder()
+                .status(Boolean.TRUE)
+                .build();
     }
 }
 
