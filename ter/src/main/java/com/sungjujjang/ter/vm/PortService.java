@@ -1,13 +1,12 @@
 package com.sungjujjang.ter.vm;
 
 import com.sungjujjang.ter.auth.Member;
+import com.sungjujjang.ter.global.error.exception.MaxPortErr;
 import com.sungjujjang.ter.global.error.exception.NoExistVmErr;
 import com.sungjujjang.ter.global.error.exception.NoOwnerErr;
-import com.sungjujjang.ter.vm.dto.BlankPortDTO;
-import com.sungjujjang.ter.vm.dto.PortCreateRequestDTO;
-import com.sungjujjang.ter.vm.dto.PortCreateResponseDTO;
-import com.sungjujjang.ter.vm.dto.VmCreateRequestDTO;
+import com.sungjujjang.ter.vm.dto.*;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,8 +27,11 @@ public class PortService {
     @Value("${proxmox.api.url}")
     private String proxmoxApiUrl;
 
-    @Value("ext.ip")
+    @Value("${ext.ip}")
     private String ip;
+
+    @Value("${max.port}")
+    private Long maxPort;
 
     public BlankPortDTO GetBlankPort() {
         BlankPortDTO blankPortDTO = WebClient.create(proxmoxApiUrl)
@@ -45,16 +47,52 @@ public class PortService {
         return blankPortDTO;
     }
 
+    @Transactional
     public PortCreateResponseDTO CreatePort(
             PortCreateRequestDTO requestDTO,
             Member member
     ) {
         Vm vm = vmRepo.findById(requestDTO.VmId())
                 .orElseThrow(() -> NoExistVmErr.EXCEPTION);
+
         if (vm.getOwner() != member) {
             throw NoOwnerErr.EXCEPTION;
         }
-        
-        return null;
+
+        if (portsRepo.countByVm(vm) >= maxPort) {
+            throw MaxPortErr.EXCEPTION;
+        }
+
+        BlankPortDTO blankPortDTO = GetBlankPort();
+        PortCreateApiRequestDTO portCreateApiRequestDTO = PortCreateApiRequestDTO.builder()
+                .ext_port(blankPortDTO.data())
+                .ip(vm.getIp())
+                .in_port(requestDTO.InPort())
+                .build();
+
+        PortCreateApiDTO portCreateApiDTO = WebClient.create(proxmoxApiUrl)
+                .post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/port")
+                        .build()
+                )
+                .header("api-key", proxmoxApiKey)
+                .bodyValue(portCreateApiRequestDTO)
+                .retrieve()
+                .bodyToMono(PortCreateApiDTO.class)
+                .block();
+
+        Ports port = Ports.builder()
+                .OutPort(blankPortDTO.data())
+                .vm(vm)
+                .InPort(requestDTO.InPort())
+                .build();
+        portsRepo.save(port);
+
+        return PortCreateResponseDTO.builder()
+                .status(Boolean.TRUE)
+                .build();
     }
+
+    
 }

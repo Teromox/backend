@@ -21,6 +21,4 @@ public class Ports {
     private Vm vm;
 
     private Integer InPort;
-
-    private String name;
 }

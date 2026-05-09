@@ -22,6 +22,8 @@ public enum ErrorCode {
 
     NOT_OWNER(410, "NOT_OWNER"),
 
+    MAX_PORT(411, "MAX_PORT"),
+
     INTERNAL_SERVER_ERR(500, "INTERNAL_SERVER");
 
     private Integer errcode;

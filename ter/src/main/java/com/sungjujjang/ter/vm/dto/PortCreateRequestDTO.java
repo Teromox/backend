@@ -4,7 +4,6 @@ import lombok.Builder;
 
 @Builder
 public record PortCreateRequestDTO(
-        Integer OutPort,
         String VmId,
         Integer InPort
 ) {}
