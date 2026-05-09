@@ -1,6 +1,8 @@
 package com.sungjujjang.ter.vm;
 
 import com.sungjujjang.ter.auth.Member;
+import com.sungjujjang.ter.global.error.exception.NoExistVmErr;
+import com.sungjujjang.ter.global.error.exception.NoOwnerErr;
 import com.sungjujjang.ter.vm.dto.BlankPortDTO;
 import com.sungjujjang.ter.vm.dto.PortCreateRequestDTO;
 import com.sungjujjang.ter.vm.dto.PortCreateResponseDTO;
@@ -17,6 +19,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Service
 @RequiredArgsConstructor
 public class PortService {
+    private final VmRepo vmRepo;
+    private final PortsRepo portsRepo;
+
     @Value("${proxmox.api.key}")
     private String proxmoxApiKey;
 
@@ -44,6 +49,12 @@ public class PortService {
             PortCreateRequestDTO requestDTO,
             Member member
     ) {
+        Vm vm = vmRepo.findById(requestDTO.VmId())
+                .orElseThrow(() -> NoExistVmErr.EXCEPTION);
+        if (vm.getOwner() != member) {
+            throw NoOwnerErr.EXCEPTION;
+        }
+        
         return null;
     }
 }
