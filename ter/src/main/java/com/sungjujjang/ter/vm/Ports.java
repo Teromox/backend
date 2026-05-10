@@ -14,7 +14,7 @@ import lombok.*;
 @Entity
 public class Ports {
     @Id
-    private Integer OutPort;
+    private Integer outPort;
 
     @ManyToOne
     @JoinColumn(name="vm_id")

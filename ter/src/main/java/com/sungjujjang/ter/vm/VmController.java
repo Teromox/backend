@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/vm")
 @RequiredArgsConstructor
 public class VmController {
-    private final TaskStorage taskStorage;
     private final VmService vmService;
     private final MemberRepo memberRepo;
 

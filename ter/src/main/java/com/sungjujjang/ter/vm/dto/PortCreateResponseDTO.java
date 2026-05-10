@@ -4,6 +4,7 @@ import lombok.Builder;
 
 @Builder
 public record PortCreateResponseDTO(
-    Boolean status
+    Boolean status,
+    Integer outPort
 ) {
 }

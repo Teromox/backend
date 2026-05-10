@@ -19,6 +19,7 @@ public enum ErrorCode {
     NO_CREDIT(408, "NO_CREDIT"),
 
     NO_EXIST_VM(409, "NO_EXIST_VM"),
+    NO_EXIST_PORT(409, "NO_EXIST_PORT"),
 
     NOT_OWNER(410, "NOT_OWNER"),
 

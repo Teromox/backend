@@ -3,15 +3,11 @@ package com.sungjujjang.ter.vm;
 import com.sungjujjang.ter.auth.Member;
 import com.sungjujjang.ter.auth.MemberRepo;
 import com.sungjujjang.ter.global.error.exception.NotExistIdErr;
-import com.sungjujjang.ter.vm.dto.BlankPortDTO;
-import com.sungjujjang.ter.vm.dto.PortCreateRequestDTO;
-import com.sungjujjang.ter.vm.dto.PortCreateResponseDTO;
+import com.sungjujjang.ter.vm.dto.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import javax.sound.sampled.Port;
 
 @RestController
 @RequestMapping("/api/port")
@@ -29,6 +25,28 @@ public class PortController {
         Member member = memberRepo.findByid(userId)
                 .orElseThrow(() -> NotExistIdErr.EXCEPTION);
         return portService.CreatePort(dto, member);
+    }
+
+    @DeleteMapping("/")
+    public PortDeleteResponseDTO DeletePort(
+            @RequestBody @Valid PortDeleteRequestDTO dto,
+            HttpServletRequest request
+    ) {
+        String userId = (String) request.getAttribute("userId");
+        Member member = memberRepo.findByid(userId)
+                .orElseThrow(() -> NotExistIdErr.EXCEPTION);
+        return portService.DeletePort(dto, member);
+    }
+
+    @GetMapping("/")
+    public PortGetResponseDTO GetPort(
+            @RequestParam(name = "id") String vmId,
+            HttpServletRequest request
+    ) {
+        String userId = (String) request.getAttribute("userId");
+        Member member = memberRepo.findByid(userId)
+                .orElseThrow(() -> NotExistIdErr.EXCEPTION);
+        return portService.GetPort(vmId, member);
     }
 
     @GetMapping("/blank")

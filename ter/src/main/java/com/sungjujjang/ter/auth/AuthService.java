@@ -6,9 +6,12 @@ import com.sungjujjang.ter.global.PasswordSetting;
 import com.sungjujjang.ter.global.error.exception.DuplicateIdErr;
 import com.sungjujjang.ter.global.error.exception.NotExistIdErr;
 import com.sungjujjang.ter.global.error.exception.NotMatchPasswordErr;
+import com.sungjujjang.ter.vm.Vm;
 import com.sungjujjang.ter.vm.VmRepo;
+import com.sungjujjang.ter.vm.VmService;
 import com.sungjujjang.ter.vm.dto.VmDTO;
 import jakarta.transaction.Transactional;
+import jakarta.validation.constraints.Email;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +24,7 @@ public class AuthService {
     private final PasswordSetting passwordSetting;
     private final JWTSetting jwtSetting;
     private final VmRepo vmRepo;
+    private final VmService vmService;
 
     Long expTime = 1000 * 60 * 60 * 24 * 7L;
 
@@ -84,6 +88,31 @@ public class AuthService {
                 .email(member.getEmail())
                 .credit(member.getCredit())
                 .vm(VVS)
+                .build();
+    }
+
+    @Transactional
+    public EmailChangeResponseDTO changeEmail(
+            EmailChangeRequestDTO requestDTO,
+            Member member
+    ) {
+        member.setEmail(requestDTO.newEmail());
+        return EmailChangeResponseDTO.builder()
+                .status(Boolean.TRUE)
+                .build();
+    }
+
+    @Transactional
+    public UserDeleteResponseDTO deleteUser(
+            Member member
+    ) {
+        List<Vm> VVS = vmRepo.findByOwner(member);
+        for (Vm vm : VVS) {
+            vmService.DeleteVmBy(vm);
+        }
+        memberRepo.delete(member);
+        return UserDeleteResponseDTO.builder()
+                .status(Boolean.TRUE)
                 .build();
     }
 }

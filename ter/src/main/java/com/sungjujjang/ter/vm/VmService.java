@@ -14,11 +14,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import javax.sound.sampled.Port;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class VmService {
     private final VmRepo vmRepo;
     private final MemberRepo memberRepo;
+    private final PortsRepo portsRepo;
 
     @Value("${proxmox.api.key}")
     private String proxmoxApiKey;
@@ -26,7 +30,7 @@ public class VmService {
     @Value("${proxmox.api.url}")
     private String proxmoxApiUrl;
 
-    @Value("ext.ip")
+    @Value("${ext.ip}")
     private String ip;
 
     @Transactional
@@ -64,28 +68,52 @@ public class VmService {
     }
 
     @Transactional
-    public VmDeleteResponseDTO DeleteVm(VmDeleteRequestDTO requestDTO, Member member) {
-        Vm vm = vmRepo.findById(requestDTO.id())
-                .orElseThrow(() -> NoExistVmErr.EXCEPTION);
-        if (vm.getOwner() != member) {
-            throw NoOwnerErr.EXCEPTION;
-        }
-        vmRepo.delete(vm);
-        // 400~ 에러 발생하면 500으로반환해줌 수정안해도댐
+    public Boolean DeleteVmBy(Vm vm) {
         WebClient.create(proxmoxApiUrl)
                 .delete()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/vm")
-                        .queryParam("vmid", requestDTO.id())
+                        .queryParam("vmid", vm.getId())
                         .build()
                 )
                 .header("api-key", proxmoxApiKey)
                 .retrieve()
                 .bodyToMono(Void.class)
                 .block();
+        List<Ports> ports = portsRepo.findByVm(vm);
+        portsRepo.deleteAll(ports);
+        vmRepo.delete(vm);
+        return true;
+    }
+
+    @Transactional
+    public VmDeleteResponseDTO DeleteVm(VmDeleteRequestDTO requestDTO, Member member) {
+        Vm vm = vmRepo.findById(requestDTO.id())
+                .orElseThrow(() -> NoExistVmErr.EXCEPTION);
+        if (vm.getOwner() != member) {
+            throw NoOwnerErr.EXCEPTION;
+        }
+
+        Boolean status = DeleteVmBy(vm);
+
+        // 400~ 에러 발생하면 500으로반환해줌 수정안해도댐
+//        WebClient.create(proxmoxApiUrl)
+//                .delete()
+//                .uri(uriBuilder -> uriBuilder
+//                        .path("/api/vm")
+//                        .queryParam("vmid", requestDTO.id())
+//                        .build()
+//                )
+//                .header("api-key", proxmoxApiKey)
+//                .retrieve()
+//                .bodyToMono(Void.class)
+//                .block();
         member.setCredit(member.getCredit()+1);
+//        List<Ports> ports = portsRepo.findByVm(vm);
+//        portsRepo.deleteAll(ports);
+//        vmRepo.delete(vm);
         return VmDeleteResponseDTO.builder()
-                .status(true)
+                .status(status)
                 .build();
     }
 
