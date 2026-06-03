@@ -33,7 +33,6 @@ public class VmService {
     @Value("${ext.ip}")
     private String ip;
 
-    @Transactional
     public VmCreateResponseDTO CreateVm(VmCreateRequestDTO requestDTO, Member member) {
         Integer credit = member.getCredit();
         if (0 > credit-1) {
