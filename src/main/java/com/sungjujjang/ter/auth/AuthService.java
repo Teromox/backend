@@ -1,0 +1,118 @@
+package com.sungjujjang.ter.auth;
+
+import com.sungjujjang.ter.auth.dto.*;
+import com.sungjujjang.ter.global.JWTSetting;
+import com.sungjujjang.ter.global.PasswordSetting;
+import com.sungjujjang.ter.global.error.exception.DuplicateIdErr;
+import com.sungjujjang.ter.global.error.exception.NotExistIdErr;
+import com.sungjujjang.ter.global.error.exception.NotMatchPasswordErr;
+import com.sungjujjang.ter.vm.Vm;
+import com.sungjujjang.ter.vm.VmRepo;
+import com.sungjujjang.ter.vm.VmService;
+import com.sungjujjang.ter.vm.dto.VmDTO;
+import jakarta.transaction.Transactional;
+import jakarta.validation.constraints.Email;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+    private final MemberRepo memberRepo;
+    private final PasswordSetting passwordSetting;
+    private final JWTSetting jwtSetting;
+    private final VmRepo vmRepo;
+    private final VmService vmService;
+
+    Long expTime = 1000 * 60 * 60 * 24 * 7L;
+
+    @Transactional
+    public AuthResponseDTO registerMember(RegisterRequestDTO requestDTO) {
+        if (memberRepo.existsByid(requestDTO.id())) {
+            throw DuplicateIdErr.EXCEPTION;
+        }
+        Member member = Member.builder()
+                .id(requestDTO.id())
+                .email(requestDTO.email())
+                .credit(0)
+                .password(passwordSetting.encode(requestDTO.password()))
+                .build();
+        memberRepo.save(member);
+
+        String jwtToken = jwtSetting.createToken(member.getId(), expTime);
+
+        return AuthResponseDTO.builder()
+                .status(Boolean.TRUE)
+                .jwt(jwtToken)
+                .code(200)
+                .object(RegiSerDTO.from(member))
+                .build();
+    }
+
+    public AuthResponseDTO loginMember(LoginRequestDTO requestDTO) {
+        Member member = memberRepo.findByid(requestDTO.id())
+                .orElseThrow(() -> NotExistIdErr.EXCEPTION);
+        if (!passwordSetting.check(requestDTO.password(), member.getPassword())) {
+            throw NotMatchPasswordErr.EXCEPTION;
+        }
+
+        String jwtToken = jwtSetting.createToken(requestDTO.id(), expTime);
+
+        return AuthResponseDTO.builder()
+                .status(Boolean.TRUE)
+                .jwt(jwtToken)
+                .code(200)
+                .object(LoginSerDTO.from(member))
+                .build();
+    }
+
+    public MeResponseDTO getMe(String UserId) {
+        Member member = memberRepo.findByid(UserId)
+                .orElseThrow(() -> NotExistIdErr.EXCEPTION);
+        // HEHE
+        List<VmDTO> VVS = vmRepo.findByOwner(member).stream()
+                    .map(
+                    vm -> VmDTO.builder()
+                            .id(vm.getId())
+                            .ip(vm.getIp())
+                            .name(vm.getName())
+                            .username(vm.getUsername())
+                            .ssh_port(vm.getSsh_port())
+                            .build()
+                    ).toList();
+        return MeResponseDTO.builder()
+                .status(Boolean.TRUE)
+                .id(member.getId())
+                .email(member.getEmail())
+                .credit(member.getCredit())
+                .vm(VVS)
+                .build();
+    }
+
+    @Transactional
+    public EmailChangeResponseDTO changeEmail(
+            EmailChangeRequestDTO requestDTO,
+            Member member
+    ) {
+        member.setEmail(requestDTO.newEmail());
+        return EmailChangeResponseDTO.builder()
+                .status(Boolean.TRUE)
+                .build();
+    }
+
+    @Transactional
+    public UserDeleteResponseDTO deleteUser(
+            Member member
+    ) {
+        List<Vm> VVS = vmRepo.findByOwner(member);
+        for (Vm vm : VVS) {
+            vmService.DeleteVmBy(vm);
+        }
+        memberRepo.delete(member);
+        return UserDeleteResponseDTO.builder()
+                .status(Boolean.TRUE)
+                .build();
+    }
+}
