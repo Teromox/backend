@@ -34,36 +34,39 @@ public class VmService {
     private String ip;
 
     public VmCreateResponseDTO CreateVm(VmCreateRequestDTO requestDTO, Member member) {
-        Integer credit = member.getCredit();
-        if (0 > credit-1) {
+        int updatedCredit = memberRepo.decrementCreditIfAvailable(member.getId());
+        if (updatedCredit == 0) {
             throw NoCreditErr.EXCEPTION;
         }
-        member.setCredit(credit-1);
-        memberRepo.save(member);
 
-        VmCreateResponseDTO responseDTO = WebClient.create(proxmoxApiUrl)
-                .post()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/api/vm")
-                        .queryParam("username", requestDTO.userName())
-                        .build()
-                )
-                .header("api-key", proxmoxApiKey)
-                .retrieve()
-                .bodyToMono(VmCreateResponseDTO.class)
-                .block();
+        try {
+            VmCreateResponseDTO responseDTO = WebClient.create(proxmoxApiUrl)
+                    .post()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/api/vm")
+                            .queryParam("username", requestDTO.userName())
+                            .build()
+                    )
+                    .header("api-key", proxmoxApiKey)
+                    .retrieve()
+                    .bodyToMono(VmCreateResponseDTO.class)
+                    .block();
 
-        Vm vm = Vm.builder()
-                .id(responseDTO.vmid())
-                .ssh_port(responseDTO.ssh_port())
-                .ip(responseDTO.ip())
-                .owner(member)
-                .username(requestDTO.userName())
-                .name(requestDTO.name())
-                .build();
-        vmRepo.save(vm);
+            Vm vm = Vm.builder()
+                    .id(responseDTO.vmid())
+                    .ssh_port(responseDTO.ssh_port())
+                    .ip(responseDTO.ip())
+                    .owner(member)
+                    .username(requestDTO.userName())
+                    .name(requestDTO.name())
+                    .build();
+            vmRepo.save(vm);
 
-        return responseDTO;
+            return responseDTO;
+        } catch (RuntimeException e) {
+            memberRepo.incrementCredit(member.getId());
+            throw e;
+        }
     }
 
     @Transactional

@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 public enum ErrorCode {
     DUPLICATE_ID_ERR(401, "DUPLICATE_ID"),
-    NOT_VALID_DTO_ERR(402, "NOT_VALID_DTO"),
+    NOT_VALID_DTO_ERR(401, "NOT_VALID_DTO"),
 
     NOT_EXIST_ID(403, "NOT_EXIST_ID"),
     NOT_MATCH_PASSWORD(403, "NOT_MATCH_PASSWORD"),

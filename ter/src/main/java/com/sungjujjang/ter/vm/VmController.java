@@ -17,7 +17,7 @@ public class VmController {
     private final VmService vmService;
     private final MemberRepo memberRepo;
 
-    @PostMapping("/")
+    @PostMapping({"", "/"})
     public VmCreateResponseDTO createVm(
             @RequestBody @Valid VmCreateRequestDTO dto,
             HttpServletRequest request
@@ -28,7 +28,7 @@ public class VmController {
         return vmService.CreateVm(dto, member);
     }
 
-    @DeleteMapping("/")
+    @DeleteMapping({"", "/"})
     public VmDeleteResponseDTO deleteVm(
             @RequestBody VmDeleteRequestDTO dto,
             HttpServletRequest request
@@ -39,7 +39,7 @@ public class VmController {
         return vmService.DeleteVm(dto, member);
     }
 
-    @PutMapping("/")
+    @PutMapping({"", "/"})
     public VmCreateResponseDTO resetVm(
             @RequestBody VmDeleteRequestDTO dto,
             HttpServletRequest request
@@ -50,7 +50,7 @@ public class VmController {
         return vmService.ResetVm(dto, member);
     }
 
-    @GetMapping("/")
+    @GetMapping({"", "/"})
     public VmResponseDTO statusVm(
             @RequestParam(name = "id") String vmId,
             HttpServletRequest request
